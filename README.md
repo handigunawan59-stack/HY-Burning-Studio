@@ -8,19 +8,23 @@ Aplikasi desktop Windows berbahasa Indonesia untuk menyiapkan dan membakar CD at
 - Deteksi drive dan media, pemeriksaan kapasitas, peninjauan sebelum burning, progres, dan penghapusan media CD-RW/DVD-RW yang didukung drive.
 - Simpan dan buka proyek Data Disc, Audio CD, atau ISO; file proyek menyimpan lokasi sumber, bukan salinan file.
 - Status drive dan media serta pesan kesalahan dengan petunjuk dan kode IMAPI yang relevan.
+- Dengarkan lagu sebelum membuat Audio CD, atur urutannya, dan lihat perkiraan durasi termasuk jeda.
+- Mode terang dan gelap; pilihan tema disimpan di komputer.
+- Pilih kecepatan yang dilaporkan drive dan media, atau gunakan otomatis. Drive dapat menyesuaikan kecepatan sebenarnya.
+- Buat file ISO dari file dan folder; penyalinan disc dibatasi pada satu sesi dengan satu track data ISO 9660 atau UDF yang dapat diperiksa drive.
 - Verifikasi penuh untuk Data Disc dan ISO; Audio CD menggunakan verifikasi cepat IMAPI yang memeriksa struktur disc, bukan perbandingan penuh isi audio.
 - Satu jendela aplikasi per sesi Windows. Pembukaan berikutnya mengaktifkan jendela yang sudah ada.
 - Installer offline untuk Windows 10 dan 11 **64-bit**. Runtime .NET disertakan.
 
 ## Status pengujian
 
-Build dan uji logika dijalankan di Windows. Pembacaan dan konversi contoh MP3, WAV, dan FLAC diuji melalui Windows Media Foundation. Drive CD/DVD fisik tidak tersedia di komputer pengembangan, sehingga burning, verifikasi hasil, dan penghapusan pada disc fisik **belum diuji**. Periksa dengan media uji sebelum mengandalkannya untuk data penting.
+Build dan uji logika dijalankan di Windows. Pembacaan dan konversi contoh MP3, WAV, dan FLAC diuji melalui Windows Media Foundation. Pembuatan ISO dari file dan folder diuji tanpa disc. Drive CD/DVD fisik tidak tersedia di komputer pengembangan, sehingga burning, pemilihan kecepatan, penyalinan disc ke ISO, verifikasi hasil, dan penghapusan pada disc fisik **belum diuji**. Periksa dengan media uji sebelum mengandalkannya untuk data penting.
 
-Audio CD memerlukan CD-R atau CD-RW kosong. Konversi audio menggunakan Windows Media Foundation; dukungan codec dapat bergantung pada edisi dan konfigurasi Windows. Windows N mungkin memerlukan Media Feature Pack. Aplikasi saat ini menggunakan kecepatan burning otomatis; tema gelap dan pratinjau audio belum tersedia. Saat membuka proyek, pastikan file dan folder sumber masih berada di lokasi semula.
+Audio CD memerlukan CD-R atau CD-RW kosong. Konversi audio menggunakan Windows Media Foundation; dukungan codec dapat bergantung pada edisi dan konfigurasi Windows. Windows N mungkin memerlukan Media Feature Pack. Saat membuka proyek, pastikan file dan folder sumber masih berada di lokasi semula. ISO yang dibuat dari file dan folder tidak otomatis bootable. Audio CD, disc campuran, multisession, dan media yang tidak dapat diperiksa drive tidak didukung untuk penyalinan disc ke ISO.
 
 ## Instalasi
 
-Unduh installer `HY-Burning-Studio-Setup-v0.2.0-beta-x64.exe` dari halaman Releases, lalu jalankan di Windows 10/11 64-bit. Drive yang mendukung penulisan CD/DVD diperlukan untuk burning. Installer tidak memerlukan akses internet ketika dijalankan.
+Unduh installer `HY-Burning-Studio-Setup-v0.3.0-beta-x64.exe` dari halaman Releases, lalu jalankan di Windows 10/11 64-bit. Drive yang mendukung penulisan CD/DVD diperlukan untuk burning. Installer tidak memerlukan akses internet ketika dijalankan.
 
 ## Membuat dari source
 
@@ -33,6 +37,10 @@ dotnet run --project ./BurnEngine.Tests
 dotnet run --project ./SingleInstance.Tests
 dotnet run --project ./ProjectPersistence.Tests
 dotnet run --project ./Status.Tests
+dotnet run --project ./AudioFeatures.Tests
+dotnet run --project ./Theme.Tests
+dotnet run --project ./Speed.Tests
+dotnet run --project ./IsoCreation.Tests
 ./installer/build-installer.ps1 -OutputDirectory ./dist
 ```
 

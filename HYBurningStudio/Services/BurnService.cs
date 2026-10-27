@@ -28,6 +28,33 @@ public sealed class BurnService
     private static void Verification(object writer, bool verify, bool audio = false) => ((IBurnVerification)writer).SetLevel(verify ? (audio ? 1 : 2) : 0);
     private static void Release(object? value) { if (value != null && Marshal.IsComObject(value)) Marshal.ReleaseComObject(value); }
 
+    private static int[] SupportedSpeeds(dynamic writer)
+    {
+        var values = (Array)writer.SupportedWriteSpeeds;
+        return WriteSpeed.Normalize(values.Cast<object>().Select(Convert.ToInt64));
+    }
+
+    public int[] GetWriteSpeeds(string driveId, bool audio)
+    {
+        dynamic? recorder = null, writer = null;
+        try
+        {
+            recorder = Recorder(driveId);
+            writer = audio ? NewCom("IMAPI2.MsftDiscFormat2TrackAtOnce") : NewCom("IMAPI2.MsftDiscFormat2Data");
+            writer.Recorder = recorder;
+            if (!(bool)writer.IsCurrentMediaSupported(recorder)) return [];
+            return SupportedSpeeds(writer);
+        }
+        finally { Release(writer); Release(recorder); }
+    }
+
+    private static void ApplySpeed(dynamic writer, int? selected)
+    {
+        if (!selected.HasValue) return;
+        WriteSpeed.Validate(selected, SupportedSpeeds(writer));
+        writer.SetWriteSpeed(selected.Value, false);
+    }
+
     public IReadOnlyList<DriveInfo> GetDrives()
     {
         var drives = new List<DriveInfo>();
@@ -78,7 +105,7 @@ public sealed class BurnService
         return reader.TotalTime;
     }
 
-    public void BurnData(string driveId, IReadOnlyList<string> paths, string volumeName, bool verify, bool eject, IProgress<BurnProgress>? progress = null)
+    public void BurnData(string driveId, IReadOnlyList<string> paths, string volumeName, bool verify, bool eject, IProgress<BurnProgress>? progress = null, int? speed = null)
     {
         if (paths.Count == 0) throw new ArgumentException("Tambahkan setidaknya satu file atau folder.");
         if (string.IsNullOrWhiteSpace(volumeName)) throw new ArgumentException("Nama disc tidak boleh kosong.");
@@ -103,7 +130,7 @@ public sealed class BurnService
             progress?.Report(new("Menyiapkan image disc", null)); result = image.CreateResultImage();
             long blocks = result.TotalBlocks; long free = writer.FreeSectorsOnMedia;
             if (blocks > free) throw new InvalidOperationException("Ukuran proyek melebihi kapasitas disc yang tersedia.");
-            Verification(writer, verify); IStream streamImage = result.ImageStream;
+            ApplySpeed(writer, speed); Verification(writer, verify); IStream streamImage = result.ImageStream;
             try { WriteData(writer, streamImage, progress); } finally { Release(streamImage); }
             if (eject) recorder.EjectMedia();
             progress?.Report(new("Selesai", 100));
@@ -111,7 +138,7 @@ public sealed class BurnService
         finally { Release(result); Release(root); Release(image); foreach (var stream in openStreams) Release(stream); Release(writer); Release(recorder); }
     }
 
-    public void BurnIso(string driveId, string isoPath, bool verify, bool eject, IProgress<BurnProgress>? progress = null)
+    public void BurnIso(string driveId, string isoPath, bool verify, bool eject, IProgress<BurnProgress>? progress = null, int? speed = null)
     {
         var file = new FileInfo(isoPath);
         if (!file.Exists) throw new FileNotFoundException("File ISO tidak ditemukan.", isoPath);
@@ -122,13 +149,13 @@ public sealed class BurnService
             progress?.Report(new("Memeriksa disc", null)); recorder = Recorder(driveId); writer = DataWriter(recorder); RequireBlank(writer, recorder);
             long free = writer.FreeSectorsOnMedia;
             if (file.Length / 2048 > free) throw new InvalidOperationException("File ISO melebihi kapasitas disc yang tersedia.");
-            Verification(writer, verify); stream = OpenStream(isoPath); WriteData(writer, stream, progress);
+            ApplySpeed(writer, speed); Verification(writer, verify); stream = OpenStream(isoPath); WriteData(writer, stream, progress);
             if (eject) recorder.EjectMedia(); progress?.Report(new("Selesai", 100));
         }
         finally { Release(stream); Release(writer); Release(recorder); }
     }
 
-    public void BurnAudio(string driveId, IReadOnlyList<string> paths, bool verify, bool eject, IProgress<BurnProgress>? progress = null)
+    public void BurnAudio(string driveId, IReadOnlyList<string> paths, bool verify, bool eject, IProgress<BurnProgress>? progress = null, int? speed = null)
     {
         if (paths.Count is 0 or > 99) throw new ArgumentException("Audio CD harus berisi 1 sampai 99 lagu.");
         var durations = paths.Select(GetAudioDuration).ToArray();
@@ -152,7 +179,7 @@ public sealed class BurnService
                 throw new InvalidOperationException("Ukuran audio yang dikonversi dan jeda melebihi kapasitas CD.");
             writer = NewCom("IMAPI2.MsftDiscFormat2TrackAtOnce"); writer.Recorder = recorder; writer.ClientName = "HY Burning Studio";
             if (!(bool)writer.IsCurrentMediaSupported(recorder)) throw new InvalidOperationException("CD ini tidak didukung untuk Audio CD.");
-            Verification(writer, verify, true); writer.PrepareMedia(); prepared = true;
+            ApplySpeed(writer, speed); Verification(writer, verify, true); writer.PrepareMedia(); prepared = true;
             for (int i = 0; i < tracks.Count; i++)
             {
                 progress?.Report(new($"Menulis lagu {i + 1} dari {tracks.Count}", (double)i * 100 / tracks.Count));

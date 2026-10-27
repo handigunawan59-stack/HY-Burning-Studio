@@ -6,6 +6,7 @@
     <Nullable>enable</Nullable>
     <ImplicitUsings>enable</ImplicitUsings>
     <AssemblyName>HYBurningStudio</AssemblyName>
+    <Version>0.3.0-beta</Version>
     <ApplicationIcon>Assets\HY-Burning-Studio.ico</ApplicationIcon>
   </PropertyGroup>
   <ItemGroup>

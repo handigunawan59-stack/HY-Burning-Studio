@@ -28,6 +28,10 @@ try
     var existing = File.ReadAllText(saved);
     Throws<InvalidDataException>(() => new SavedProject { Kind = "bad" }.Save(saved), "Invalid project must be rejected");
     Check(File.ReadAllText(saved) == existing, "A rejected save must not alter an existing project");
+    var tooManyTracks = Enumerable.Range(0, 100).Select(i => Path.Combine(root, $"{i}.mp3")).ToList();
+    Throws<InvalidDataException>(() => new SavedProject { Kind = "Audio", Paths = tooManyTracks }.Save(saved), "Audio project must reject more than 99 tracks");
+    File.WriteAllText(saved, System.Text.Json.JsonSerializer.Serialize(new SavedProject { Kind = "Audio", Paths = tooManyTracks }));
+    Throws<InvalidDataException>(() => SavedProject.Load(saved), "Opening an audio project must reject more than 99 tracks");
     File.WriteAllText(saved, "{ invalid json");
     Throws<InvalidDataException>(() => SavedProject.Load(saved), "Corrupt project files must be rejected");
     File.WriteAllText(saved, "{}");

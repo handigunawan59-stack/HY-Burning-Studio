@@ -1,5 +1,6 @@
 using System.IO;
 using System.Text.Json;
+using HYBurningStudio.Services;
 using System.Text.Json.Serialization;
 
 namespace HYBurningStudio.Models;
@@ -41,6 +42,8 @@ public sealed class SavedProject
     {
         if (Version != 1 || Kind is not ("Data" or "Audio" or "Iso") || VolumeName is null || VolumeName.Length > 32 || Paths is null || Paths.Count > 5000 || (Kind == "Iso" && Paths.Count > 1))
             throw new InvalidDataException("Isi atau versi file proyek tidak didukung.");
+        if (Kind == "Audio" && Paths.Count > AudioDiscDuration.MaximumTracks)
+            throw new InvalidDataException("Audio CD maksimal berisi 99 lagu.");
         var seen = new HashSet<string>(StringComparer.OrdinalIgnoreCase);
         foreach (string path in Paths)
         {

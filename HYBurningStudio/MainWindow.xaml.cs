@@ -27,8 +27,11 @@ public partial class MainWindow : Window
 
     public MainWindow()
     {
+        ThemePalette.Apply(ThemePreference.Load(ThemePreference.DefaultPath));
         InitializeComponent();
+        InitializeTheme();
         ItemsList.ItemsSource = rows;
+        Closed += (_, _) => StopAudioPreview();
         Closing += (_, e) => { if (busy) { e.Cancel = true; MessageBox.Show(this, "Tunggu sampai proses selesai sebelum menutup aplikasi.", "HY Burning Studio", MessageBoxButton.OK, MessageBoxImage.Information); } };
         Loaded += (_, _) => RefreshDrives();
         ShowPage(HomePage, HomeNav, "BERANDA  /  MULAI");
@@ -37,11 +40,13 @@ public partial class MainWindow : Window
     private void ShowPage(UIElement page, Button nav, string title)
     {
         if (busy && page != ProgressPage) return;
+        if (page != ProjectPage) StopAudioPreview();
         foreach (var p in new UIElement[] { HomePage, ProjectPage, IsoPage, ReviewPage, ProgressPage, SettingsPage }) p.Visibility = p == page ? Visibility.Visible : Visibility.Collapsed;
         foreach (var n in new[] { HomeNav, DataNav, AudioNav, IsoNav, SettingsNav })
         {
-            n.Background = (Brush)new BrushConverter().ConvertFromString(n == nav ? "#DDE8FF" : "Transparent")!;
-            n.Foreground = (Brush)new BrushConverter().ConvertFromString(n == nav ? "#1E5FE2" : "#64748B")!;
+            if (n == nav) n.SetResourceReference(BackgroundProperty, "ThemeNavSelected");
+            else n.Background = Brushes.Transparent;
+            n.SetResourceReference(ForegroundProperty, n == nav ? "ThemeNavSelectedText" : "ThemeNavText");
         }
         Breadcrumb.Text = title;
         SaveProjectButton.Visibility = page == ProjectPage || page == IsoPage ? Visibility.Visible : Visibility.Collapsed;
@@ -56,11 +61,13 @@ public partial class MainWindow : Window
         currentKind = kind;
         bool audio = kind == ProjectKind.Audio;
         ProjectTitle.Text = audio ? "Audio CD" : "Data Disc";
-        ProjectHint.Text = audio ? "Susun lagu untuk CD audio. Durasi belum termasuk jeda antar lagu." : "Kumpulkan file dan folder untuk disc Anda.";
+        ProjectHint.Text = audio ? "Susun dan dengarkan lagu. Kapasitas merupakan perkiraan termasuk jeda antar lagu." : "Kumpulkan file dan folder untuk disc Anda.";
         AddFileButton.Content = audio ? "+ Tambah lagu" : "+ Tambah file";
         AddFolderButton.Visibility = audio ? Visibility.Collapsed : Visibility.Visible;
         VolumePanel.Visibility = audio ? Visibility.Hidden : Visibility.Visible;
         MoveUpButton.Visibility = MoveDownButton.Visibility = audio ? Visibility.Visible : Visibility.Collapsed;
+        PreviewAudioButton.Visibility = StopPreviewButton.Visibility = audio ? Visibility.Visible : Visibility.Collapsed;
+        if (!audio) StopAudioPreview();
         ShowPage(ProjectPage, audio ? AudioNav : DataNav, audio ? "PROYEK  /  AUDIO CD" : "PROYEK  /  DATA DISC");
         UpdateRows();
     }
@@ -91,7 +98,7 @@ public partial class MainWindow : Window
     }
     private void ReviewDrivePicker_SelectionChanged(object sender, SelectionChangedEventArgs e)
     {
-        if (ReviewDrivePicker.SelectedItem is OpticalDrive drive) { selectedDriveId = drive.Id; UpdateDriveStatus(drive); ReviewMedia.TextWrapping = TextWrapping.Wrap; ReviewMedia.Text = DriveStatusText.Describe(drive.Name, drive.Media, drive.IsBlank, drive.FreeBytes); }
+        if (ReviewDrivePicker.SelectedItem is OpticalDrive drive) { selectedDriveId = drive.Id; UpdateDriveStatus(drive); ReviewMedia.TextWrapping = TextWrapping.Wrap; ReviewMedia.Text = DriveStatusText.Describe(drive.Name, drive.Media, drive.IsBlank, drive.FreeBytes); UpdateSpeedPicker(drive); }
     }
     private void AddFile_Click(object sender, RoutedEventArgs e)
     {
@@ -116,6 +123,12 @@ public partial class MainWindow : Window
                 if (currentKind == ProjectKind.Audio)
                 {
                     if (!audioFiles.Add(path)) continue;
+                    if (audioFiles.Items.Count > AudioDiscDuration.MaximumTracks)
+                    {
+                        audioFiles.Remove(Path.GetFullPath(path));
+                        MessageBox.Show(this, "Audio CD maksimal berisi 99 lagu.", "Batas lagu", MessageBoxButton.OK, MessageBoxImage.Information);
+                        break;
+                    }
                     try { durations[Path.GetFullPath(path)] = service.GetAudioDuration(path); }
                     catch { audioFiles.Remove(Path.GetFullPath(path)); throw; }
                 }
@@ -128,6 +141,7 @@ public partial class MainWindow : Window
     private void RemoveItem_Click(object sender, RoutedEventArgs e)
     {
         if (ItemsList.SelectedItem is not ItemRow row) return;
+        StopAudioPreview();
         CurrentFiles.Remove(row.Path); durations.Remove(row.Path); UpdateRows();
     }
     private void MoveUp_Click(object sender, RoutedEventArgs e) => Move(-1);
@@ -163,9 +177,9 @@ public partial class MainWindow : Window
             double used, total;
             if (currentKind == ProjectKind.Audio)
             {
-                used = audioFiles.Items.Sum(p => durations.GetValueOrDefault(p).TotalSeconds);
+                used = AudioDiscDuration.EstimateSeconds(audioFiles.Items.Select(p => durations.GetValueOrDefault(p)).ToArray());
                 total = drive?.AudioCapacitySeconds ?? 0;
-                CapacityText.Text = total > 0 ? $"{FormatTime(TimeSpan.FromSeconds(used))} dari {FormatTime(TimeSpan.FromSeconds(total))} menit" : $"{FormatTime(TimeSpan.FromSeconds(used))} · masukkan CD kosong";
+                CapacityText.Text = total > 0 ? $"Perkiraan {FormatTime(TimeSpan.FromSeconds(used))} dari {FormatTime(TimeSpan.FromSeconds(total))} menit · termasuk jeda" : $"Perkiraan {FormatTime(TimeSpan.FromSeconds(used))} · termasuk jeda · masukkan CD kosong";
             }
             else
             {
@@ -197,6 +211,7 @@ public partial class MainWindow : Window
         if (currentKind == ProjectKind.Iso ? isoPath == null : CurrentFiles.Items.Count == 0) { MessageBox.Show(this, "Tambahkan file terlebih dahulu.", "Proyek kosong", MessageBoxButton.OK, MessageBoxImage.Information); return; }
         if (drives.Count == 0) { MessageBox.Show(this, "Drive CD/DVD tidak ditemukan. Hubungkan drive dan perbarui daftar.", "Drive tidak ditemukan", MessageBoxButton.OK, MessageBoxImage.Warning); return; }
         ReviewDrivePicker.ItemsSource = drives; ReviewDrivePicker.SelectedItem = drives.FirstOrDefault(d => d.Id == selectedDriveId) ?? drives[0];
+        UpdateSpeedPicker(ReviewDrivePicker.SelectedItem as OpticalDrive);
         VerifyHint.Text = currentKind == ProjectKind.Audio ? "Audio CD menggunakan pemeriksaan cepat; bukan perbandingan penuh setiap byte." : "Verifikasi penuh melalui drive setelah penulisan.";
         ReviewSummary.Text = currentKind switch { ProjectKind.Data => $"Data Disc · {dataFiles.Items.Count} item · {VolumeName.Text}", ProjectKind.Audio => $"Audio CD · {audioFiles.Items.Count} lagu", _ => $"Burn ISO · {Path.GetFileName(isoPath)}" };
         ShowPage(ReviewPage, currentKind == ProjectKind.Data ? DataNav : currentKind == ProjectKind.Audio ? AudioNav : IsoNav, "PROYEK  /  TINJAU");
@@ -210,16 +225,16 @@ public partial class MainWindow : Window
         try
         {
             long bytes = currentKind == ProjectKind.Iso ? new FileInfo(isoPath!).Length : currentKind == ProjectKind.Data ? dataFiles.TotalBytes : 0;
-            double seconds = audioFiles.Items.Sum(p => durations.GetValueOrDefault(p).TotalSeconds);
+            double seconds = AudioDiscDuration.EstimateSeconds(audioFiles.Items.Select(p => durations.GetValueOrDefault(p)).ToArray());
             if ((currentKind != ProjectKind.Audio && drive.FreeBytes > 0 && bytes > drive.FreeBytes) || (currentKind == ProjectKind.Audio && drive.AudioCapacitySeconds > 0 && seconds > drive.AudioCapacitySeconds)) { MessageBox.Show(this, "Proyek melebihi kapasitas disc.", "Kapasitas tidak cukup", MessageBoxButton.OK, MessageBoxImage.Warning); return; }
             var kind = currentKind; string driveId = drive.Id, volume = VolumeName.Text.Trim(); string? image = isoPath;
-            var paths = (kind == ProjectKind.Audio ? audioFiles : dataFiles).Items.ToArray(); bool verify = VerifyCheck.IsChecked == true, eject = EjectCheck.IsChecked == true;
+            var paths = (kind == ProjectKind.Audio ? audioFiles : dataFiles).Items.ToArray(); bool verify = VerifyCheck.IsChecked == true, eject = EjectCheck.IsChecked == true; int? speed = (SpeedPicker.SelectedItem as SpeedOption)?.Value;
             if (kind == ProjectKind.Data && string.IsNullOrWhiteSpace(volume)) { MessageBox.Show(this, "Isi nama disc terlebih dahulu."); return; }
             await RunOperationAsync($"{drive.Name} · {drive.Media}", p =>
             {
-                if (kind == ProjectKind.Data) service.BurnData(driveId, paths, volume, verify, eject, p);
-                else if (kind == ProjectKind.Audio) service.BurnAudio(driveId, paths, verify, eject, p);
-                else service.BurnIso(driveId, image!, verify, eject, p);
+                if (kind == ProjectKind.Data) service.BurnData(driveId, paths, volume, verify, eject, p, speed);
+                else if (kind == ProjectKind.Audio) service.BurnAudio(driveId, paths, verify, eject, p, speed);
+                else service.BurnIso(driveId, image!, verify, eject, p, speed);
             });
         }
         catch (Exception ex) { ShowError(ex); }

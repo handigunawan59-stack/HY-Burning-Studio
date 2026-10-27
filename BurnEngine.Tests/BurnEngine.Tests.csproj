@@ -1,4 +1,4 @@
 <Project Sdk="Microsoft.NET.Sdk">
   <PropertyGroup><OutputType>Exe</OutputType><TargetFramework>net8.0-windows</TargetFramework><ImplicitUsings>enable</ImplicitUsings><Nullable>enable</Nullable></PropertyGroup>
-  <ItemGroup><Compile Include="../HYBurningStudio/Services/BurnValidation.cs" Link="BurnValidation.cs" /><Compile Include="../HYBurningStudio/Services/BurnService.cs" Link="BurnService.cs" /><Compile Include="../HYBurningStudio/Services/DriveStatusText.cs" Link="DriveStatusText.cs" /><PackageReference Include="NAudio" Version="2.2.1" /></ItemGroup>
+  <ItemGroup><Compile Include="../HYBurningStudio/Services/BurnValidation.cs" Link="BurnValidation.cs" /><Compile Include="../HYBurningStudio/Services/BurnService.cs" Link="BurnService.cs" /><Compile Include="../HYBurningStudio/Services/DriveStatusText.cs" Link="DriveStatusText.cs" /><Compile Include="../HYBurningStudio/Services/WriteSpeed.cs" Link="WriteSpeed.cs" /><PackageReference Include="NAudio" Version="2.2.1" /></ItemGroup>
 </Project>

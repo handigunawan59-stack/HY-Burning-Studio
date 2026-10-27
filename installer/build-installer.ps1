@@ -9,7 +9,7 @@ $buildRoot = [IO.Path]::GetFullPath((Join-Path $PSScriptRoot '..\artifacts\insta
 $publish = Join-Path $buildRoot 'publish'
 $manifest = Join-Path $buildRoot 'uninstall-files.nsh'
 $output = [IO.Path]::GetFullPath($OutputDirectory)
-$installer = Join-Path $output 'HY-Burning-Studio-Setup-v0.2.0-beta-x64.exe'
+$installer = Join-Path $output 'HY-Burning-Studio-Setup-v0.3.0-beta-x64.exe'
 $compiler = Join-Path ${env:ProgramFiles(x86)} 'NSIS\makensis.exe'
 if (!(Test-Path -LiteralPath $compiler)) {
     $command = Get-Command makensis.exe -ErrorAction SilentlyContinue

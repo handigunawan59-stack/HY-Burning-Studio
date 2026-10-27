@@ -1,0 +1,24 @@
+<Window x:Class="HYBurningStudio.CreateIsoWindow"
+        xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+        xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+        Title="Buat file ISO" Icon="Assets/HY-Burning-Studio.ico" Width="690" Height="640" MinWidth="600" MinHeight="560"
+        WindowStartupLocation="CenterOwner" FontFamily="Segoe UI" Background="{DynamicResource ThemeBackground}" Foreground="{DynamicResource ThemeText}">
+  <Window.Resources>
+    <Style TargetType="TextBlock"><Setter Property="Foreground" Value="{DynamicResource ThemeText}"/><Setter Property="TextWrapping" Value="Wrap"/></Style>
+    <Style TargetType="Button"><Setter Property="Padding" Value="12,8"/><Setter Property="Background" Value="{DynamicResource ThemeCard}"/><Setter Property="Foreground" Value="{DynamicResource ThemeButtonText}"/><Setter Property="BorderBrush" Value="{DynamicResource ThemeBorder}"/><Setter Property="Margin" Value="0,0,8,0"/></Style>
+    <Style TargetType="TextBox"><Setter Property="Padding" Value="7"/><Setter Property="Background" Value="{DynamicResource ThemeInput}"/><Setter Property="Foreground" Value="{DynamicResource ThemeText}"/><Setter Property="BorderBrush" Value="{DynamicResource ThemeBorder}"/></Style>
+    <Style TargetType="RadioButton"><Setter Property="Foreground" Value="{DynamicResource ThemeText}"/><Setter Property="Margin" Value="0,0,18,0"/></Style>
+    <Style TargetType="ListBox"><Setter Property="Background" Value="{DynamicResource ThemeInput}"/><Setter Property="Foreground" Value="{DynamicResource ThemeText}"/><Setter Property="BorderBrush" Value="{DynamicResource ThemeBorder}"/></Style>
+    <Style TargetType="ComboBox"><Setter Property="Padding" Value="6"/></Style>
+  </Window.Resources>
+  <Grid Margin="26"><Grid.RowDefinitions><RowDefinition Height="Auto"/><RowDefinition Height="Auto"/><RowDefinition Height="*"/><RowDefinition Height="Auto"/><RowDefinition Height="Auto"/><RowDefinition Height="Auto"/></Grid.RowDefinitions>
+    <StackPanel><TextBlock Text="Buat file ISO" FontSize="25" FontWeight="Bold"/><TextBlock Text="Pilih sumber dan lokasi penyimpanan image." Foreground="{DynamicResource ThemeHint}" Margin="0,5,0,0"/></StackPanel>
+    <StackPanel Grid.Row="1" Orientation="Horizontal" Margin="0,20,0,12"><RadioButton x:Name="FromFiles" Content="Dari file / folder" GroupName="Source" IsChecked="True" Checked="Source_Changed"/><RadioButton x:Name="FromDisc" Content="Dari disc" GroupName="Source" Checked="Source_Changed"/></StackPanel>
+    <Grid Grid.Row="2"><Grid x:Name="FilesPanel"><Grid.RowDefinitions><RowDefinition Height="Auto"/><RowDefinition Height="*"/><RowDefinition Height="Auto"/></Grid.RowDefinitions><StackPanel Orientation="Horizontal" Margin="0,0,0,8"><Button Content="+ File" Click="AddFile_Click"/><Button Content="+ Folder" Click="AddFolder_Click"/><Button Content="Hapus pilihan" Click="Remove_Click"/></StackPanel><ListBox x:Name="Items" Grid.Row="1"/><StackPanel Grid.Row="2" Margin="0,12,0,0"><TextBlock Text="Nama disc di dalam ISO" Margin="0,0,0,4"/><TextBox x:Name="Volume" Text="HY_BURNING" MaxLength="32"/></StackPanel></Grid>
+      <StackPanel x:Name="DiscPanel" Visibility="Collapsed"><TextBlock Text="Drive CD/DVD sumber" Margin="0,0,0,5"/><ComboBox x:Name="DiscPicker" DisplayMemberPath="Name"/><Button Content="Perbarui drive" Click="Refresh_Click" HorizontalAlignment="Left" Margin="0,8,0,10"/><TextBlock Text="Mendukung disc satu sesi dengan satu track data ISO 9660 atau UDF yang dapat diperiksa drive. Audio CD, disc campuran, dan multisession tidak didukung. Jika informasi disc tidak dapat dipastikan, proses akan dihentikan." Foreground="{DynamicResource ThemeHint}"/></StackPanel>
+    </Grid>
+    <StackPanel Grid.Row="3" Margin="0,14,0,0"><TextBlock x:Name="Status" Text="File sumber tidak akan diubah." Foreground="{DynamicResource ThemeHint}"/><ProgressBar x:Name="Progress" Height="8" Minimum="0" Maximum="100" Margin="0,8,0,0" Visibility="Collapsed"/></StackPanel>
+    <TextBlock Grid.Row="4" Text="ISO dari file/folder tidak otomatis menjadi bootable." Foreground="{DynamicResource ThemeHint}" Margin="0,12,0,0"/>
+    <StackPanel Grid.Row="5" Orientation="Horizontal" HorizontalAlignment="Right" Margin="0,16,0,0"><Button x:Name="CloseButton" Content="Tutup" Click="Close_Click"/><Button x:Name="CreateButton" Content="Buat ISO..." Click="Create_Click" Background="#286BEF" Foreground="White" BorderBrush="#286BEF"/></StackPanel>
+  </Grid>
+</Window>
