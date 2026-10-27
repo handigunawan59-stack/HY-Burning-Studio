@@ -6,9 +6,12 @@
     <Nullable>enable</Nullable>
     <ImplicitUsings>enable</ImplicitUsings>
     <AssemblyName>HYBurningStudio</AssemblyName>
+    <ApplicationIcon>Assets\HY-Burning-Studio.ico</ApplicationIcon>
   </PropertyGroup>
   <ItemGroup>
     <PackageReference Include="NAudio" Version="2.2.1" />
     <None Update="NAudio-LICENSE.txt" CopyToOutputDirectory="PreserveNewest" CopyToPublishDirectory="PreserveNewest" />
+    <Resource Include="Assets\HY-Burning-Studio.ico" />
+    <Resource Include="Assets\HY-Burning-Studio-Logo.png" />
   </ItemGroup>
 </Project>

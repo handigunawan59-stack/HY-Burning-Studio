@@ -44,6 +44,7 @@ public partial class MainWindow : Window
             n.Foreground = (Brush)new BrushConverter().ConvertFromString(n == nav ? "#1E5FE2" : "#64748B")!;
         }
         Breadcrumb.Text = title;
+        SaveProjectButton.Visibility = page == ProjectPage || page == IsoPage ? Visibility.Visible : Visibility.Collapsed;
     }
     private void Home_Click(object sender, RoutedEventArgs e) => ShowPage(HomePage, HomeNav, "BERANDA  /  MULAI");
     private void Data_Click(object sender, RoutedEventArgs e) => OpenProject(ProjectKind.Data);
@@ -73,19 +74,24 @@ public partial class MainWindow : Window
             selectedDriveId = drives.FirstOrDefault(d => d.Id == selectedDriveId)?.Id ?? drives.FirstOrDefault()?.Id;
             foreach (var picker in new[] { DrivePicker, ReviewDrivePicker, EraseDrivePicker }) { picker.ItemsSource = drives; picker.SelectedItem = drives.FirstOrDefault(d => d.Id == selectedDriveId); }
             var drive = drives.FirstOrDefault(d => d.Id == selectedDriveId);
-            DriveStatus.Text = drive == null ? "Tidak ada drive CD/DVD" : $"{drive.Name}\n{drive.Media}";
-            HomeDrive.Text = drive == null ? "Hubungkan drive CD/DVD dan pilih Perbarui drive." : $"{drive.Name} · {drive.Media}";
+            UpdateDriveStatus(drive);
             UpdateCapacity();
         }
-        catch (Exception ex) { DriveStatus.Text = "Drive tidak dapat diperiksa"; ShowError(ex); }
+        catch (Exception ex) { drives.Clear(); selectedDriveId = null; DriveStatus.Text = "Drive tidak dapat diperiksa"; HomeDrive.Text = "Periksa sambungan drive, lalu pilih Perbarui drive."; UpdateCapacity(); ShowError(ex); }
+    }
+    private void UpdateDriveStatus(OpticalDrive? drive)
+    {
+        DriveStatus.Text = drive == null ? "Tidak ada drive CD/DVD" : $"{drive.Name}\n{drive.Media}";
+        HomeDrive.TextWrapping = TextWrapping.Wrap;
+        HomeDrive.Text = DriveStatusText.Describe(drive?.Name, drive?.Media, drive?.IsBlank ?? false, drive?.FreeBytes ?? 0);
     }
     private void DrivePicker_SelectionChanged(object sender, SelectionChangedEventArgs e)
     {
-        if (DrivePicker.SelectedItem is OpticalDrive drive) { selectedDriveId = drive.Id; UpdateCapacity(); }
+        if (DrivePicker.SelectedItem is OpticalDrive drive) { selectedDriveId = drive.Id; UpdateDriveStatus(drive); UpdateCapacity(); }
     }
     private void ReviewDrivePicker_SelectionChanged(object sender, SelectionChangedEventArgs e)
     {
-        if (ReviewDrivePicker.SelectedItem is OpticalDrive drive) { selectedDriveId = drive.Id; ReviewMedia.Text = $"{drive.Name} · {drive.Media}"; }
+        if (ReviewDrivePicker.SelectedItem is OpticalDrive drive) { selectedDriveId = drive.Id; UpdateDriveStatus(drive); ReviewMedia.TextWrapping = TextWrapping.Wrap; ReviewMedia.Text = DriveStatusText.Describe(drive.Name, drive.Media, drive.IsBlank, drive.FreeBytes); }
     }
     private void AddFile_Click(object sender, RoutedEventArgs e)
     {
@@ -115,7 +121,7 @@ public partial class MainWindow : Window
                 }
                 else dataFiles.Add(path);
             }
-            catch (Exception ex) { MessageBox.Show(this, $"Tidak dapat menambahkan {Path.GetFileName(path)}.\n\n{ex.Message}", "File tidak dapat dibaca", MessageBoxButton.OK, MessageBoxImage.Warning); }
+            catch (Exception ex) { MessageBox.Show(this, $"Tidak dapat menambahkan {Path.GetFileName(path)}.\n\n{DriveStatusText.ExplainError(ex)}", "File tidak dapat dibaca", MessageBoxButton.OK, MessageBoxImage.Warning); }
         }
         UpdateRows();
     }
@@ -230,9 +236,9 @@ public partial class MainWindow : Window
         busy = true; SetNavigationEnabled(false); ProgressStatus.Text = "Mempersiapkan..."; ProgressDetails.Text = details; ProgressDone.Visibility = Visibility.Collapsed; BurnProgressBar.IsIndeterminate = true;
         var progress = new Progress<BurnProgress>(p => { if (!busy) return; ProgressStatus.Text = p.Status; BurnProgressBar.IsIndeterminate = p.Percent == null; if (p.Percent != null) BurnProgressBar.Value = Math.Clamp(p.Percent.Value, 0, 100); });
         try { await Task.Run(() => operation(progress)); ProgressStatus.Text = "Proses selesai"; BurnProgressBar.IsIndeterminate = false; BurnProgressBar.Value = 100; }
-        catch (Exception ex) { ProgressStatus.Text = "Proses gagal"; ProgressDetails.Text = ex.Message; BurnProgressBar.IsIndeterminate = false; BurnProgressBar.Value = 0; MessageBox.Show(this, ex.Message, "Proses gagal", MessageBoxButton.OK, MessageBoxImage.Error); }
+        catch (Exception ex) { ProgressStatus.Text = "Proses gagal"; ProgressDetails.Text = "Periksa rincian kesalahan dan coba lagi."; BurnProgressBar.IsIndeterminate = false; BurnProgressBar.Value = 0; MessageBox.Show(this, DriveStatusText.ExplainError(ex), "Proses gagal", MessageBoxButton.OK, MessageBoxImage.Error); }
         finally { busy = false; SetNavigationEnabled(true); ProgressDone.Visibility = Visibility.Visible; RefreshDrives(); }
     }
-    private void SetNavigationEnabled(bool enabled) { foreach (var button in new[] { HomeNav, DataNav, AudioNav, IsoNav, SettingsNav, RefreshDriveButton }) button.IsEnabled = enabled; }
-    private void ShowError(Exception ex) => MessageBox.Show(this, ex.Message, "HY Burning Studio", MessageBoxButton.OK, MessageBoxImage.Error);
+    private void SetNavigationEnabled(bool enabled) { foreach (var button in new[] { HomeNav, DataNav, AudioNav, IsoNav, SettingsNav, RefreshDriveButton, OpenProjectButton, SaveProjectButton }) button.IsEnabled = enabled; }
+    private void ShowError(Exception ex) => MessageBox.Show(this, DriveStatusText.ExplainError(ex), "HY Burning Studio", MessageBoxButton.OK, MessageBoxImage.Error);
 }

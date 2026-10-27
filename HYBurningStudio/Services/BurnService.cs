@@ -43,7 +43,7 @@ public sealed class BurnService
                     string name = ((string)recorder.ProductId).Trim();
                     var roots = (Array)recorder.VolumePathNames;
                     if (roots.Length > 0) name += $" ({roots.GetValue(0)})";
-                    string media = "Tidak ada disc"; long freeBytes = 0; bool blank = false; bool cd = false; int seconds = 0;
+                    string media = DriveStatusText.UnknownMedia; long freeBytes = 0; bool blank = false; bool cd = false; int seconds = 0;
                     try
                     {
                         writer = DataWriter(recorder);

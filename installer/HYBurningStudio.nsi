@@ -1,5 +1,7 @@
 Unicode True
 !include "MUI2.nsh"
+!define MUI_ICON "..\HYBurningStudio\Assets\HY-Burning-Studio.ico"
+!define MUI_UNICON "..\HYBurningStudio\Assets\HY-Burning-Studio.ico"
 
 !ifndef PUBLISH_DIR
   !error "PUBLISH_DIR must point to the self-contained application publish directory."
@@ -39,7 +41,7 @@ Section "HY Burning Studio" MainSection
   CreateShortCut "$SMPROGRAMS\HY Burning Studio\Hapus HY Burning Studio.lnk" "$INSTDIR\Uninstall.exe"
   WriteRegStr HKCU "Software\HY Burning Studio" "InstallDir" "$INSTDIR"
   WriteRegStr HKCU "Software\Microsoft\Windows\CurrentVersion\Uninstall\HYBurningStudio" "DisplayName" "HY Burning Studio"
-  WriteRegStr HKCU "Software\Microsoft\Windows\CurrentVersion\Uninstall\HYBurningStudio" "DisplayVersion" "1.0.0"
+  WriteRegStr HKCU "Software\Microsoft\Windows\CurrentVersion\Uninstall\HYBurningStudio" "DisplayVersion" "0.2.0-beta"
   WriteRegStr HKCU "Software\Microsoft\Windows\CurrentVersion\Uninstall\HYBurningStudio" "Publisher" "HY Burning Studio"
   WriteRegStr HKCU "Software\Microsoft\Windows\CurrentVersion\Uninstall\HYBurningStudio" "DisplayIcon" "$INSTDIR\HYBurningStudio.exe"
   WriteRegStr HKCU "Software\Microsoft\Windows\CurrentVersion\Uninstall\HYBurningStudio" "UninstallString" '"$INSTDIR\Uninstall.exe"'
